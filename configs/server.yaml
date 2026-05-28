@@ -1,0 +1,42 @@
+mode: server
+
+server:
+  listen: ":8080"
+  public_url: "http://localhost:8080"
+  token: "change-me"
+  enable_local_probe: true
+  retention: 720h
+
+ui:
+  title: "Comp Health"
+  theme: "auto"
+
+log:
+  level: "info"
+
+storage:
+  driver: "memory"
+
+probes:
+  - id: "api-service"
+    name: "API 服务"
+    type: "http"
+    target: "https://example.com/health"
+    method: "GET"
+    expect_status: 200
+    interval: 30s
+    timeout: 5s
+
+  - id: "web-service"
+    name: "网页服务"
+    type: "tcp"
+    target: "example.com:443"
+    interval: 30s
+    timeout: 3s
+
+  - id: "shell-disk"
+    name: "磁盘检查"
+    type: "shell"
+    command: "df -h / | tail -1"
+    interval: 60s
+    timeout: 5s

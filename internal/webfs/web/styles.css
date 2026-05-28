@@ -1,0 +1,265 @@
+/* ============================================================
+   CSS Variables / Theming
+   ============================================================ */
+:root {
+  --bg:              #ffffff;
+  --bg-card:         #f8f9fa;
+  --bg-banner-ok:    #ecfdf5;
+  --border-ok:       #a7f3d0;
+  --bg-banner-down:  #fef2f2;
+  --border-down:     #fecaca;
+  --text:            #111827;
+  --text-muted:      #6b7280;
+  --border:          #e5e7eb;
+  --accent:          #10b981;
+  --bar-up:          #22c55e;
+  --bar-down:        #ef4444;
+  --bar-empty:       #e5e7eb;
+  --header-bg:       #ffffff;
+  --header-border:   #e5e7eb;
+  --btn-bg:          #f3f4f6;
+  --btn-hover:       #e5e7eb;
+  --shadow:          0 1px 3px rgba(0,0,0,.08);
+  --radius:          12px;
+  --radius-sm:       8px;
+}
+
+[data-theme="dark"] {
+  --bg:              #0f1117;
+  --bg-card:         #1a1d2e;
+  --bg-banner-ok:    #0d2015;
+  --border-ok:       #166534;
+  --bg-banner-down:  #1f0a0a;
+  --border-down:     #7f1d1d;
+  --text:            #f1f5f9;
+  --text-muted:      #94a3b8;
+  --border:          #2d3748;
+  --bar-empty:       #2d3748;
+  --header-bg:       #0f1117;
+  --header-border:   #2d3748;
+  --btn-bg:          #1e2235;
+  --btn-hover:       #2d3748;
+  --shadow:          0 1px 3px rgba(0,0,0,.4);
+}
+
+/* ============================================================
+   Reset & Base
+   ============================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  transition: background .2s ease, color .2s ease;
+}
+
+/* ============================================================
+   Header
+   ============================================================ */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  height: 56px;
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--header-border);
+  backdrop-filter: blur(6px);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.logo-icon { flex-shrink: 0; }
+
+.logo-text {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -.01em;
+}
+
+/* ============================================================
+   Theme Toggle Button
+   ============================================================ */
+.theme-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--btn-bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.theme-btn:hover {
+  background: var(--btn-hover);
+  color: var(--text);
+}
+
+.icon { width: 18px; height: 18px; flex-shrink: 0; }
+
+/* Show sun in dark mode, moon in light mode */
+[data-theme="dark"]  .icon-moon { display: none; }
+[data-theme="light"] .icon-sun  { display: none; }
+
+/* ============================================================
+   Main Layout
+   ============================================================ */
+.main {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 36px 28px 60px;
+}
+
+/* ============================================================
+   Overall Status Banner
+   ============================================================ */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 24px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  margin-bottom: 36px;
+}
+
+.banner-ok      { background: var(--bg-banner-ok);   border-color: var(--border-ok);   }
+.banner-down    { background: var(--bg-banner-down);  border-color: var(--border-down); }
+.banner-loading { background: var(--bg-card);         border-color: var(--border); opacity: .7; }
+
+.banner-icon  { font-size: 24px; line-height: 1; flex-shrink: 0; }
+.banner-title { font-size: 17px; font-weight: 600; color: var(--text); }
+.banner-sub   { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+
+/* ============================================================
+   Services Section
+   ============================================================ */
+.section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.last-updated {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.service-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* ============================================================
+   Service Row
+   ============================================================ */
+.service-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 18px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  transition: background .12s;
+  min-width: 0;
+}
+.service-row:hover { background: var(--btn-hover); }
+
+/* Status dot */
+.service-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-up   { background: var(--bar-up); }
+.dot-down { background: var(--bar-down); }
+
+/* Service name */
+.service-name {
+  flex: 1;
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Availability percentage */
+.service-avail {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+  width: 68px;
+  text-align: right;
+}
+
+/* ============================================================
+   Timeline Bar
+   ============================================================ */
+.timeline {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.bar {
+  width: 5px;
+  height: 22px;
+  border-radius: 2px;
+  background: var(--bar-empty);
+  flex-shrink: 0;
+  transition: background .15s;
+}
+.bar-up   { background: var(--bar-up);   }
+.bar-down { background: var(--bar-down); }
+
+/* ============================================================
+   Loading Placeholder
+   ============================================================ */
+.loading-placeholder {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 48px 0;
+  font-size: 13px;
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 640px) {
+  .main   { padding: 20px 14px 48px; }
+  .header { padding: 0 14px; }
+  .service-avail { display: none; }
+  .timeline      { display: none; }
+  .banner { padding: 14px 18px; }
+}

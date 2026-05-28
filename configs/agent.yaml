@@ -1,0 +1,36 @@
+mode: agent
+
+agent:
+  node_id: "node-001"
+  node_name: "edge-agent-01"
+  server_url: "http://localhost:8080"
+  token: "change-me"
+  report_interval: 30s
+  retry_interval: 5s
+
+log:
+  level: "info"
+
+probes:
+  - id: "api-service"
+    name: "API 服务"
+    type: "http"
+    target: "https://example.com/health"
+    method: "GET"
+    expect_status: 200
+    interval: 30s
+    timeout: 5s
+
+  - id: "local-port"
+    name: "本地端口"
+    type: "tcp"
+    target: "127.0.0.1:9000"
+    interval: 30s
+    timeout: 3s
+
+  - id: "shell-mem"
+    name: "内存检查"
+    type: "shell"
+    command: "free -m | awk 'NR==2{print $3\"/\"$2\" MB\"}"
+    interval: 60s
+    timeout: 5s
