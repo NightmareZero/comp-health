@@ -42,6 +42,10 @@ type ServiceStatus struct {
 }
 
 type StatusPoint struct {
-	At     time.Time `json:"at"`
-	Status Status    `json:"status"`
+	At        time.Time `json:"at"`
+	Status    Status    `json:"status"`
+	LatencyMS int64     `json:"latency_ms,omitempty"`
+	Message   string    `json:"message,omitempty"`
+	NodeID    string    `json:"node_id,omitempty"`
+	NodeName  string    `json:"node_name,omitempty"`
 }

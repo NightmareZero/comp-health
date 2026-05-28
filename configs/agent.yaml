@@ -11,6 +11,11 @@ agent:
 log:
   level: "info"
 
+storage:
+  driver: "memory"
+  cleanup_interval: 1h
+  timeline_points: 96
+
 probes:
   - id: "api-service"
     name: "API 服务"
@@ -31,6 +36,6 @@ probes:
   - id: "shell-mem"
     name: "内存检查"
     type: "shell"
-    command: "free -m | awk 'NR==2{print $3\"/\"$2\" MB\"}"
+    command: "free -m | awk 'NR==2{print $3\"/\"$2\" MB\"}'"
     interval: 60s
     timeout: 5s

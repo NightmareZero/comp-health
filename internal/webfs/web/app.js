@@ -1,8 +1,13 @@
-/* ============================================================
-   Theme
-   ============================================================ */
+const REFRESH_MS = 30_000;
+const DEFAULT_RANGE = '6h';
+let activeRange = DEFAULT_RANGE;
+
 const html = document.documentElement;
 const themeToggle = document.getElementById('themeToggle');
+const overallBanner = document.getElementById('overallBanner');
+const lastUpdated = document.getElementById('lastUpdated');
+const serviceList = document.getElementById('serviceList');
+const rangeSwitch = document.getElementById('rangeSwitch');
 
 function getPreferredTheme() {
   const stored = localStorage.getItem('health-theme');
@@ -13,6 +18,7 @@ function getPreferredTheme() {
 function applyTheme(theme) {
   html.setAttribute('data-theme', theme);
   localStorage.setItem('health-theme', theme);
+  themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
 }
 
 function toggleTheme() {
@@ -20,104 +26,27 @@ function toggleTheme() {
   applyTheme(current === 'dark' ? 'light' : 'dark');
 }
 
-// Apply on load, then wire button
 applyTheme(getPreferredTheme());
 themeToggle.addEventListener('click', toggleTheme);
 
-// Follow system preference changes when no manual override exists
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
   if (!localStorage.getItem('health-theme')) {
     applyTheme(e.matches ? 'dark' : 'light');
   }
 });
 
-/* ============================================================
-   Data Fetching
-   ============================================================ */
-const REFRESH_MS = 30_000;
-
-async function fetchStatus() {
-  const resp = await fetch('/api/v1/status');
-  if (!resp.ok) throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
-  return resp.json();
+function formatTime(value) {
+  if (!value) return '--';
+  return new Date(value).toLocaleString('zh-CN');
 }
 
-/* ============================================================
-   Rendering
-   ============================================================ */
-function renderBanner(overall) {
-  const banner = document.getElementById('overallBanner');
-  const icon   = document.getElementById('bannerIcon');
-  const title  = document.getElementById('bannerTitle');
-  const sub    = document.getElementById('bannerSub');
-
-  banner.className = 'banner ' + (overall === 'up' ? 'banner-ok' : 'banner-down');
-
-  if (overall === 'up') {
-    icon.textContent  = '✅';
-    title.textContent = '一切运行正常';
-    sub.textContent   = '所有系统均按预期运行。';
-  } else {
-    icon.textContent  = '⚠️';
-    title.textContent = '部分服务异常';
-    sub.textContent   = '存在一个或多个服务不可用，请检查下方详情。';
-  }
+function formatStatus(status) {
+  return status === 'up' ? '正常' : '异常';
 }
 
-/**
- * Build a timeline bar strip from an array of StatusPoint objects.
- * Shows the last MAX_BARS checks; pads left with empty bars if fewer exist.
- */
-function buildTimeline(timeline) {
-  const MAX_BARS = 45;
-  const points = Array.isArray(timeline) ? timeline.slice(-MAX_BARS) : [];
-  const pad = MAX_BARS - points.length;
-
-  let html = '';
-  for (let i = 0; i < pad; i++) {
-    html += '<span class="bar"></span>';
-  }
-  for (const pt of points) {
-    const cls  = pt.status === 'up' ? 'bar-up' : 'bar-down';
-    const time = new Date(pt.at).toLocaleString('zh-CN');
-    const tip  = `${time} — ${pt.status === 'up' ? '正常' : '异常'}`;
-    html += `<span class="bar ${cls}" title="${tip}"></span>`;
-  }
-  return `<div class="timeline">${html}</div>`;
-}
-
-function formatAvail(pct) {
-  if (pct == null || isNaN(pct)) return '—';
-  return pct.toFixed(2) + '%';
-}
-
-function renderServices(services) {
-  const list = document.getElementById('serviceList');
-
-  if (!Array.isArray(services) || services.length === 0) {
-    list.innerHTML = '<div class="loading-placeholder">暂无服务数据，请检查探针配置。</div>';
-    return;
-  }
-
-  list.innerHTML = services.map(svc => {
-    const dotCls = svc.current_status === 'up' ? 'dot-up' : 'dot-down';
-    const avail  = formatAvail(svc.availability_pct);
-    const name   = escapeHTML(svc.name || svc.probe_id);
-    return `
-      <div class="service-row">
-        <span class="service-dot ${dotCls}"></span>
-        <span class="service-name" title="${name}">${name}</span>
-        ${buildTimeline(svc.timeline)}
-        <span class="service-avail">${avail}</span>
-      </div>`;
-  }).join('');
-}
-
-function updateLastUpdated(iso) {
-  const el = document.getElementById('lastUpdated');
-  if (!iso) { el.textContent = ''; return; }
-  const d = new Date(iso);
-  el.textContent = '最近更新: ' + d.toLocaleTimeString('zh-CN');
+function formatLatency(latency) {
+  if (latency === undefined || latency === null) return '--';
+  return `${latency} ms`;
 }
 
 function escapeHTML(str) {
@@ -128,24 +57,112 @@ function escapeHTML(str) {
     .replace(/"/g, '&quot;');
 }
 
-/* ============================================================
-   Main Refresh Loop
-   ============================================================ */
+function updateRangeSwitch(range) {
+  activeRange = range || DEFAULT_RANGE;
+  document.querySelectorAll('.range-btn').forEach(button => {
+    button.classList.toggle('active', button.dataset.range === activeRange);
+  });
+}
+
+function buildTimeline(timeline) {
+  const points = Array.isArray(timeline) ? timeline : [];
+  if (!points.length) {
+    return '<div class="timeline empty">暂无历史数据</div>';
+  }
+
+  const bars = points.map(pt => {
+    const cls = pt.status === 'up' ? 'bar-up' : 'bar-down';
+    const tip = [
+      `时间：${formatTime(pt.at)}`,
+      `状态：${formatStatus(pt.status)}`,
+      `耗时：${formatLatency(pt.latency_ms)}`,
+      pt.node_name ? `节点：${pt.node_name}` : '',
+      pt.message ? `信息：${pt.message}` : '',
+    ].filter(Boolean).join('\n');
+    return `<span class="bar ${cls}" title="${escapeHTML(tip)}"></span>`;
+  }).join('');
+
+  return `<div class="timeline">${bars}</div>`;
+}
+
+function formatAvail(pct) {
+  if (pct == null || Number.isNaN(pct)) return '—';
+  return `${pct.toFixed(2)}%`;
+}
+
+function renderServices(services) {
+  if (!Array.isArray(services) || services.length === 0) {
+    serviceList.innerHTML = '<div class="empty-state">暂无服务数据，请检查探针配置。</div>';
+    return;
+  }
+
+  serviceList.innerHTML = services.map(svc => {
+    const statusCls = svc.current_status === 'up' ? 'status-up' : 'status-down';
+    const name = escapeHTML(svc.name || svc.probe_id);
+    const msg = escapeHTML(svc.message || '--');
+    return `
+      <article class="service-card">
+        <div class="service-header">
+          <div>
+            <h4>${name}</h4>
+            <p class="service-meta">${escapeHTML((svc.type || '').toUpperCase())} · 最后检查 ${formatTime(svc.last_checked_at)}</p>
+          </div>
+          <span class="status-badge ${statusCls}">${formatStatus(svc.current_status)}</span>
+        </div>
+        <div class="service-metrics">
+          <div>
+            <span class="metric-label">可用率</span>
+            <strong>${formatAvail(svc.availability_pct)}</strong>
+          </div>
+          <div>
+            <span class="metric-label">消息</span>
+            <strong>${msg}</strong>
+          </div>
+        </div>
+        ${buildTimeline(svc.timeline)}
+      </article>`;
+  }).join('');
+}
+
+function updateLastUpdated(iso) {
+  lastUpdated.textContent = iso ? `最近更新：${formatTime(iso)}` : '';
+}
+
+function renderBanner(overall) {
+  overallBanner.textContent = overall === 'up' ? '所有服务运行正常' : '存在异常服务';
+  overallBanner.className = overall === 'up' ? 'banner-up' : 'banner-down';
+}
+
+async function fetchStatus() {
+  const resp = await fetch(`/api/v1/status?range=${encodeURIComponent(activeRange)}`);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
+  return resp.json();
+}
+
 async function refresh() {
   try {
     const data = await fetchStatus();
     renderBanner(data.overall);
     renderServices(data.services);
     updateLastUpdated(data.updated_at);
+    updateRangeSwitch(data.range || activeRange);
   } catch (err) {
     console.error('status fetch failed:', err);
-    const banner = document.getElementById('overallBanner');
-    banner.className = 'banner banner-down';
-    document.getElementById('bannerIcon').textContent  = '❌';
-    document.getElementById('bannerTitle').textContent = '无法连接到服务器';
-    document.getElementById('bannerSub').textContent   = err.message;
+    overallBanner.textContent = '无法连接到服务器';
+    overallBanner.className = 'banner-down';
+    lastUpdated.textContent = err.message;
   }
 }
 
+rangeSwitch?.addEventListener('click', event => {
+  const button = event.target.closest('.range-btn');
+  if (!button) return;
+  const nextRange = button.dataset.range || DEFAULT_RANGE;
+  if (nextRange === activeRange) return;
+  updateRangeSwitch(nextRange);
+  refresh();
+});
+
+updateRangeSwitch(DEFAULT_RANGE);
 refresh();
 setInterval(refresh, REFRESH_MS);

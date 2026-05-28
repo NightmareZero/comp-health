@@ -15,7 +15,10 @@ log:
   level: "info"
 
 storage:
-  driver: "memory"
+  driver: "sqlite"
+  path: "data/health.db"
+  cleanup_interval: 1h
+  timeline_points: 96
 
 probes:
   - id: "api-service"

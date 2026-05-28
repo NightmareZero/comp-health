@@ -10,6 +10,7 @@ import (
 type Store interface {
 	SaveResult(model.CheckResult)
 	SaveReport(model.NodeReport)
-	Snapshot() []model.ServiceStatus
+	Snapshot(rangeWindow time.Duration, points int) []model.ServiceStatus
 	Nodes() map[string]time.Time
+	Close() error
 }

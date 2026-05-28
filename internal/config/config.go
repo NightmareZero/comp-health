@@ -47,7 +47,10 @@ type LogConfig struct {
 }
 
 type Storage struct {
-	Driver string `yaml:"driver"`
+	Driver          string        `yaml:"driver"`
+	Path            string        `yaml:"path"`
+	CleanupInterval time.Duration `yaml:"cleanup_interval"`
+	TimelinePoints  int           `yaml:"timeline_points"`
 }
 
 type Probe struct {
@@ -109,6 +112,18 @@ func applyDefaults(cfg *Config) {
 	if cfg.UI.Theme == "" {
 		cfg.UI.Theme = "auto"
 	}
+	if cfg.Storage.Driver == "" {
+		cfg.Storage.Driver = "memory"
+	}
+	if cfg.Storage.CleanupInterval == 0 {
+		cfg.Storage.CleanupInterval = time.Hour
+	}
+	if cfg.Storage.TimelinePoints == 0 {
+		cfg.Storage.TimelinePoints = 96
+	}
+	if cfg.Storage.Path == "" && cfg.Storage.Driver == "sqlite" {
+		cfg.Storage.Path = "data/health.db"
+	}
 	for i := range cfg.Probes {
 		if cfg.Probes[i].Interval == 0 {
 			cfg.Probes[i].Interval = 30 * time.Second
@@ -131,6 +146,13 @@ func validate(cfg *Config) error {
 		return errors.New("config mode must be server or agent")
 	}
 	cfg.Mode = mode
+	cfg.Storage.Driver = strings.ToLower(cfg.Storage.Driver)
+	if cfg.Storage.Driver != "memory" && cfg.Storage.Driver != "sqlite" {
+		return errors.New("storage driver must be memory or sqlite")
+	}
+	if cfg.Storage.Driver == "sqlite" && cfg.Storage.Path == "" {
+		return errors.New("storage.path is required when storage driver is sqlite")
+	}
 	for _, probe := range cfg.Probes {
 		if probe.ID == "" || probe.Name == "" || probe.Type == "" {
 			return fmt.Errorf("probe id, name and type are required")
@@ -156,7 +178,10 @@ log:
   level: "info"
 
 storage:
-  driver: "memory"
+  driver: "sqlite"
+  path: "data/health.db"
+  cleanup_interval: 1h
+  timeline_points: 96
 
 probes:
   - id: "api-service"
@@ -184,6 +209,8 @@ log:
 
 storage:
   driver: "memory"
+  cleanup_interval: 1h
+  timeline_points: 96
 
 probes:
   - id: "api-service"

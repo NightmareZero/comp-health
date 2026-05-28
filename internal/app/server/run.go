@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"comp-health/internal/config"
@@ -17,7 +18,12 @@ import (
 )
 
 func Run(ctx context.Context, cfg *config.Config) error {
-	storage := store.NewMemoryStore()
+	storage, err := newStore(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	defer storage.Close()
+
 	registry := probe.NewRegistry(
 		httpcheck.New(),
 		shellcheck.New(),
@@ -34,4 +40,15 @@ func Run(ctx context.Context, cfg *config.Config) error {
 	srv := httpserver.New(cfg, storage, webfs.FS)
 	log.Printf("server listening on %s", cfg.Server.Listen)
 	return srv.Run(ctx)
+}
+
+func newStore(ctx context.Context, cfg *config.Config) (store.Store, error) {
+	switch cfg.Storage.Driver {
+	case "sqlite":
+		return store.NewSQLiteStore(ctx, cfg.Storage.Path, cfg.Server.Retention, cfg.Storage.CleanupInterval)
+	case "memory", "":
+		return store.NewMemoryStore(cfg.Server.Retention), nil
+	default:
+		return nil, fmt.Errorf("unsupported storage driver: %s", cfg.Storage.Driver)
+	}
 }
